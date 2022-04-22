@@ -1,4 +1,5 @@
 import spacy
+import numpy as np
 import AsciiDocToHtml
 
 class MySpacy():
@@ -25,6 +26,15 @@ class MySpacy():
             sent_vecs = []
             for sent in sentences:
                 sent_vecs.append(sent.vector)
+            
+            # normalizing sentence vectors/embeddings
+            for i, sent_vec in enumerate(sent_vecs):
+                sent_vecs[i] = sent_vec / np.linalg.norm(sent_vec)
+
+            # Getting the Similarity/Affinity Matrix
+            np_array_sent_vecs_norm = np.array(sent_vecs)
+            similarity_matrix = np_array_sent_vecs_norm.dot(np_array_sent_vecs_norm.T)
+
 
 
 if __name__ == "__main__":
