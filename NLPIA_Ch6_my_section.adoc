@@ -1,0 +1,47 @@
+==== Extract natural language from the NLPiA manuscript
+
+The first step is to take this unstructured chapter text and turn it into structured data so that the natural language text can be separated from the code blocks and other "unnatural" text.
+You can use the Python package called `Asciidoc3` to convert any _AsciiDoc_ (.adoc) text file into HTML.
+With the HTML text file, we can use the _BeautifulSoup_ to extract the text.
+
+
+.HTML Convert AsciiDoc files to HTML with Asciidoc3
+
+<1> You can visit this page for more details on Asciidoc3 and HTML generation from asciidoc: https://asciidoc3.org/userguide.html#_html_generation
+
+Now that we have our text from this chapter, we will run the text through the English model from _spaCy_ to get our sentence embeddings. _spaCy_ will default to simply averaging the _token_ vectors. footnote:[spaCy's vector attribute for the Span object defaults to the average of the token vectors: https://spacy.io/api/span#vector] In addition to getting the sentence vectors, we also want to get the _noun phrases_ footnote:[See the Wiki page titled, 'Noun phrase': https://en.wikipedia.org/wiki/Noun_phrase] footnote:[spaCy's Span.noun_chunks: https://spacy.io/api/span#noun_chunks] from each sentence that will be the labels for our sentence vectors.
+
+.Getting Sentence Embeddings and Noun Phrases with spaCy
+
+Now that we have sentence vectors and noun phrases, we are going to normalize (the 2-norm) footnote:[See the Wiki page title, 'Norm (mathematics) -- Euclidean norm': https://en.wikipedia.org/wiki/Norm_(mathematics)#Euclidean_norm] the sentence vectors. Normalizing the data in the 300-dimensional vector gets all the values on the same scale while still retaining what differentiates them. footnote:[See the web page titled, 'Why Data Normalization is necessary for Machine Learning models': https://medium.com/@urvashilluniya/why-data-normalization-is-necessary-for-machine-learning-models-681b65a05029]
+
+.Normalizing the Sentence Vector Embeddings with NumPy
+
+With the sentence vectors normalized, we can get the _similarity matrix_ (also called an _affinity matrix_). footnote:[See this web page titled, 'Affinity Matrix': https://deepai.org/machine-learning-glossary-and-terms/affinity-matrix]
+
+.Getting the Similarity/Affinity Matrix
+
+The similarity matrix is calculated by taking the _dot product_ between the normalized matrix of sentence embeddings (n by 300 dimensions) with the transpose of itself. This gives an n by n (n = number of sentences in the document) dimensional matrix with the top triangle and the bottom triangle of the matrix being equal. The logic of this is that any vectors pointing in a similar direction will give a weighted sum of their values (dot product) that is close to 1 when they are similar, since the vectors are normalized and all have the same magnitude, but in different directions; think of a sphere in hyper space -- a hypersphere with n-dimensions (an _n-sphere_). footnote:[See the Wiki page titled, 'n-sphere': https://en.wikipedia.org/wiki/N-sphere] These weighted sums will be the value of the undirected edges in the graph, and the nodes are the indexes from the similarity matrix. For example: index_i is one node, and index_j is another node (where 'i' represents rows and 'j' represents columns in the matrix).
+
+With the similarity matrix, we can now create an undirected graph with the data. The code below uses a library called `NetworkX` footnote:[See the NetworkX web page for more information: https://networkx.org/] to create the _undirected graph_ data structure. This data structure is a dictionary of dictionaries of dictionaries. footnote:[See the NetworkX documentation for more details: https://networkx.org/documentation/stable/reference/introduction.html#data-structure] So the graph is a multi-nested dictionary. The nested dictionaries allow for quick lookups with a sparse data storage.
+
+.Creating the Undirected Graph
+
+<1> np.triu turns the lower triangle in the matrix (k=1 means to include the diagonal in the matrix) into zeros; this allows us to create a single check for the threshold.
+<2> This regular expression pattern will help us clean the node labels dictionary of values we do not necessarily want as labels for the nodes
+<3> This threshold is arbitrary. It seemed to be a good cut-off point for this data.
+
+With the graph data structure constructed, we can now use the plotting library `matplotlib.pyplot` to view the graph data structure.
+
+.Plotting the Undirected Graph
+
+<1> The argument 'k' denotes the optimal distance between nodes. This number was changed from the default to improve the visual footnote:[See the NetworkX documentation for details: https://networkx.org/documentation/stable/reference/generated/networkx.drawing.layout.spring_layout.html#networkx.drawing.layout.spring_layout]
+
+And finally, we now have our plot of an _undirected graph data structure_ with _nodes_ representing sentences in this chapter and the _edges_ (or lines) representing the similarity or connectedness between sentences. Looking at the plot of the graph data structure, you can see the central big cluster of nodes (sentences) are connected the most, and there are various other clusters of nodes around the central cluster. This central cluster could be interpreted as the central idea of this chapter. This central cluster could be an abstract representation of the chapter `sentiment`. And the other clusters around the central cluster could be interpreted as ideas a little less related to the main point of this chapter because they have fewer connections with the central cluster.
+
+.Undirected Graph Plot of Chapter 6
+
+.Undirected Graph Plot of Chapter 6 Center Zoom-in
+image::../images/ch06/adjacency_graph_ch_6_zoom_in_center_with_labels_bold.png[Center zoom-in of the undirected graph plot of Chapter 6 using sentence embeddings and noun phrases as labels,width=100%,link="../images/ch06/adjacency_graph_ch_6_zoom_in_center_with_labels_bold.png]
+
+The end of this chapter includes some exercises that you can do to practice what we have covered in this section.
