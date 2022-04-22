@@ -1,5 +1,6 @@
 import subprocess
 import os
+import sys # to read in stdin
 import re
 from bs4 import BeautifulSoup
 
@@ -26,5 +27,11 @@ class AsciiDocToHtml():
 
 
 if __name__ == "__main__":
+    for line in sys.stdin():
+        if 'q' == line.rstrip():
+            break
+        print(f'Input: {line}')
+        ascii_doc_file = line.rstrip()
 
-    AsciiDocToHtml()
+    if 'adoc' in ascii_doc_file:
+        AsciiDocToHtml(ascii_doc_file)
